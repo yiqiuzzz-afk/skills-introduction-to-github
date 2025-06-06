@@ -1,0 +1,92 @@
+import { useState } from "react";
+
+export default function MontyHallSimulator() {
+  const boxes = ["A", "B", "C"];
+  const [prizeBox, setPrizeBox] = useState(() => randomBox());
+  const [playerChoice, setPlayerChoice] = useState(null);
+  const [hostOpen, setHostOpen] = useState(null);
+  const [result, setResult] = useState(null);
+  const [stats, setStats] = useState({ stayWins: 0, switchWins: 0, total: 0 });
+
+  function randomBox() {
+    return boxes[Math.floor(Math.random() * boxes.length)];
+  }
+
+  function startGame() {
+    setPrizeBox(randomBox());
+    setPlayerChoice(null);
+    setHostOpen(null);
+    setResult(null);
+  }
+
+  function playerPick(box) {
+    setPlayerChoice(box);
+
+    // 主持人打開一個沒獎品且不是玩家選的箱子
+    const possibleOpens = boxes.filter(
+      (b) => b !== box && b !== prizeBox
+    );
+    const openBox = possibleOpens[Math.floor(Math.random() * possibleOpens.length)];
+    setHostOpen(openBox);
+  }
+
+  function makeFinalChoice(switchChoice) {
+    let finalChoice = playerChoice;
+    if (switchChoice) {
+      // 換箱：選剩下未開且未選的箱子
+      finalChoice = boxes.find(
+        (b) => b !== playerChoice && b !== hostOpen
+      );
+    }
+    const win = finalChoice === prizeBox;
+
+    setResult(win ? "贏了！🎉" : "沒中獎，再試試！");
+    setStats((prev) => {
+      const newStats = { ...prev, total: prev.total + 1 };
+      if (switchChoice && win) newStats.switchWins++;
+      else if (!switchChoice && win) newStats.stayWins++;
+      return newStats;
+    });
+  }
+
+  return (
+    <div style={{ maxWidth: 400, margin: "auto", fontFamily: "sans-serif" }}>
+      <h2>三箱問題模擬器</h2>
+      <button onClick={startGame} disabled={playerChoice !== null}>
+        開始新遊戲
+      </button>
+
+      {playerChoice === null && (
+        <div style={{ marginTop: 20 }}>
+          <p>請選擇一個箱子：</p>
+          {boxes.map((box) => (
+            <button key={box} onClick={() => playerPick(box)} style={{ margin: 5 }}>
+              箱子 {box}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {playerChoice !== null && hostOpen !== null && result === null && (
+        <div style={{ marginTop: 20 }}>
+          <p>你選了箱子 {playerChoice}，主持人打開了箱子 {hostOpen}（沒獎品）。</p>
+          <p>是否換成另一個未開的箱子？</p>
+          <button onClick={() => makeFinalChoice(false)} style={{ marginRight: 10 }}>
+            不換
+          </button>
+          <button onClick={() => makeFinalChoice(true)}>換箱</button>
+        </div>
+      )}
+
+      {result !== null && (
+        <div style={{ marginTop: 20 }}>
+          <p>{result}</p>
+          <p>
+            統計：總遊戲數 {stats.total} 次，換箱贏 {stats.switchWins} 次，不換贏 {stats.stayWins} 次。
+          </p>
+          <button onClick={startGame}>再玩一次</button>
+        </div>
+      )}
+    </div>
+  );
+}
